@@ -7,6 +7,9 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 @Path("/hello")
@@ -24,7 +27,9 @@ public class TracedResource {
         TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
         String response = secondServiceClient.callSecond();
         LOG.info("Service1: Received response from Service2: " + response);
-        return "Service1 -> " + response;
+
+        DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
+        return "Service1 -> " + response + " > " + formatoDestino.format(new Date());
     }
 }
 
