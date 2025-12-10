@@ -12,16 +12,12 @@ public class TracedResource {
 
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
-    @RestClient
-    SecondServiceClient secondServiceClient;
-
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        LOG.info("Service1: Starting request");
-        String response = secondServiceClient.callSecond();
-        LOG.info("Service1: Received response from Service2: " + response);
-        return "Service1 -> " + response;
+        LOG.info("Service3: Starting request");
+        LOG.info("Service3: Received response from Service2: ");
+        return "Service1 -> ";
     }
 }
 

@@ -15,16 +15,15 @@ public class TracedResource {
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
     @RestClient
-    SecondServiceClient secondServiceClient;
+    ThirdServiceClient thirdServiceClient;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() throws InterruptedException {
-        LOG.info("Service1: Starting request");
-        TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
-        String response = secondServiceClient.callSecond();
-        LOG.info("Service1: Received response from Service2: " + response);
-        return "Service1 -> " + response;
+        LOG.info("Service2: Starting request");
+        TimeUnit.MILLISECONDS.sleep(150); // Simulate processing time
+        String response = thirdServiceClient.callThird();
+        LOG.info("Service2: Received response from Service3: " + response);
+        return "Service2 -> " + response;
     }
 }
-
