@@ -1,5 +1,8 @@
 package com.francofral.opentelemetry;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -16,14 +19,32 @@ public class TracedResource {
 
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
+    private final Counter requestCounter;
+    private final Timer requestTimer;
+
+    public TracedResource(MeterRegistry registry) {
+        this.requestCounter = Counter.builder("service_requests_total")
+                .description("Total number of service requests")
+                .tag("service", "ot-third-service")
+                .register(registry);
+
+        this.requestTimer = Timer.builder("service_request_duration")
+                .description("Service request duration")
+                .tag("service", "ot-third-service")
+                .register(registry);
+    }
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        LOG.info("Service3: Starting request");
-        LOG.info("Service3: Received response from Service2: ");
+    public String hello() throws Exception {
+        return requestTimer.recordCallable(() -> {
+            LOG.info("Service3: Starting request");
+            requestCounter.increment();
+            LOG.info("Service3: Finishing the business login in service 3, back to service 2: ");
 
-        DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-        return "Service1 -> " + formatoDestino.format(new Date());
+            DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
+            return "Service3 [ " + formatoDestino.format(new Date()) + " ]";
+        });
     }
 }
 

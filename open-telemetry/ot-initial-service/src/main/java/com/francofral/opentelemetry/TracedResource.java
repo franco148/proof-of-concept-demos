@@ -1,5 +1,8 @@
 package com.francofral.opentelemetry;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -17,19 +20,38 @@ public class TracedResource {
 
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
+    private final Counter requestCounter;
+    private final Timer requestTimer;
+
+    public TracedResource(MeterRegistry registry) {
+        this.requestCounter = Counter.builder("service_requests_total")
+                .description("Total number of service requests")
+                .tag("service", "ot-initial-service")
+                .register(registry);
+
+        this.requestTimer = Timer.builder("service_request_duration")
+                .description("Service request duration")
+                .tag("service", "ot-initial-service")
+                .register(registry);
+    }
+
     @RestClient
     SecondServiceClient secondServiceClient;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String hello() throws InterruptedException {
-        LOG.info("Service1: Starting request");
-        TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
-        String response = secondServiceClient.callSecond();
-        LOG.info("Service1: Received response from Service2: " + response);
+    public String hello() throws Exception {
+        return requestTimer.recordCallable(() -> {
+            LOG.info("Service1: Starting request");
+            requestCounter.increment();
 
-        DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-        return "Service1 -> " + response + " > " + formatoDestino.format(new Date());
+            TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
+            String response = secondServiceClient.callSecond();
+            LOG.info("Service1: Received response from Service2: " + response);
+
+            DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
+            return "Service1 [ " + formatoDestino.format(new Date()) + " ]";
+        });
     }
 }
 
