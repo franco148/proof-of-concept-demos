@@ -37,12 +37,13 @@ services:
     networks:
       - monitoring
 
-  # Promtail (Log shipper for Loki) - Simplified for local development
+  # Promtail (Log shipper for Loki) - Reads both Quarkus logs and Docker logs
   promtail:
     image: grafana/promtail:latest
     volumes:
       - ./promtail-config.yaml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/logs:/tmp/logs
     command: -config.file=/etc/promtail/config.yml
     networks:
       - monitoring

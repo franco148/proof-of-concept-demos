@@ -7,9 +7,27 @@ positions:
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 102400
 
 scrape_configs:
-  # For local development - structured log parsing
+  # Quarkus services logs from files
+  - job_name: 'quarkus-services'
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          job: 'quarkus-services'
+          __path__: '/tmp/logs/ot-initial-service.log'
+      - targets: ['localhost']
+        labels:
+          job: 'quarkus-services'
+          __path__: '/tmp/logs/ot-second-service.log'
+      - targets: ['localhost']
+        labels:
+          job: 'quarkus-services'
+          __path__: '/tmp/logs/ot-third-service.log'
+
+  # Docker container logs (for infrastructure)
   - job_name: 'docker-logs'
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
@@ -23,14 +41,6 @@ scrape_configs:
         target_label: 'service'
         replacement: '$1'
     pipeline_stages:
-      # Parse structured log format: timestamp level [category] [traceId,spanId] (thread) message
-      - regex:
-          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\w+) \[(?P<category>[^\]]+)\] \[(?P<traceId>[^,]*),(?P<spanId>[^\]]*)\] \((?P<thread>[^\)]+)\) (?P<message>.+)$'
       - labels:
-          level:
-          category:
-          traceId:
-          spanId:
-          thread:
-          container:
           service:
+          container:
