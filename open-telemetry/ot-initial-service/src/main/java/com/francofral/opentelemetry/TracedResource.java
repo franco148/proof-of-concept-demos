@@ -50,7 +50,7 @@ public class TracedResource {
             LOG.info("Service1: Received response from Service2: " + response);
 
             DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-            return "Service1 [ " + formatoDestino.format(new Date()) + " ] " + response;
+            return "Service1 [ " + formatoDestino.format(new Date()) + " ] -> " + response;
         });
     }
 }
