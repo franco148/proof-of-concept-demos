@@ -47,10 +47,14 @@ public class TracedResource {
 
             TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
             String response = secondServiceClient.callSecond();
-            LOG.info("Service1: Received response from Service2: " + response);
+            LOG.info("FIRST CALL: Service1: Received response from Service2: " + response);
+
+            TimeUnit.MILLISECONDS.sleep(150); // Simulate processing time
+            String response2 = response + " " + secondServiceClient.callSecond();
+            LOG.info("SECOND CALL: Service1: Received response from Service2: " + response2);
 
             DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-            return "Service1 [ " + formatoDestino.format(new Date()) + " ] -> " + response;
+            return "Service1 [ " + formatoDestino.format(new Date()) + " ] -> " + response2;
         });
     }
 }
