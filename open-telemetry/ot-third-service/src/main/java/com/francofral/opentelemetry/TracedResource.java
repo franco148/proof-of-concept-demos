@@ -1,13 +1,14 @@
 package com.francofral.opentelemetry;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 import java.text.DateFormat;
@@ -19,32 +20,49 @@ public class TracedResource {
 
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
-    private final Counter requestCounter;
-    private final Timer requestTimer;
+    private final LongCounter requestCounter;
+    private final Tracer tracer;
 
-    public TracedResource(MeterRegistry registry) {
-        this.requestCounter = Counter.builder("service_requests_total")
-                .description("Total number of service requests")
-                .tag("service", "ot-third-service")
-                .register(registry);
-
-        this.requestTimer = Timer.builder("service_request_duration")
-                .description("Service request duration")
-                .tag("service", "ot-third-service")
-                .register(registry);
+    public TracedResource(Meter meter, Tracer tracer) {
+        this.tracer = tracer;
+        this.requestCounter = meter
+                .counterBuilder("service_requests_total")
+                .setDescription("Total number of service requests")
+                .setUnit("requests")
+                .build();
     }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() throws Exception {
-        return requestTimer.recordCallable(() -> {
+        long startTime = System.currentTimeMillis();
+
+        Span span = tracer.spanBuilder("hello-processing").startSpan();
+
+        try (Scope scope = span.makeCurrent()) {
             LOG.info("Service3: Starting request");
-            requestCounter.increment();
-            LOG.info("Service3: Finishing the business login in service 3, back to service 2: ");
+            requestCounter.add(1);
+
+            span.setAttribute("service.name", "ot-third-service");
+            span.addEvent("Processing started");
+
+            LOG.info("Service3: Finishing the business logic in service 3, back to service 2");
 
             DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-            return "Service3 [ " + formatoDestino.format(new Date()) + " ]";
-        });
+            String result = "Service3 [ " + formatoDestino.format(new Date()) + " ]";
+
+            long duration = System.currentTimeMillis() - startTime;
+            span.setAttribute("request.duration_ms", duration);
+            span.addEvent("Processing completed");
+
+            return result;
+        } catch (Exception e) {
+            span.recordException(e);
+            span.setAttribute("error", true);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 }
 

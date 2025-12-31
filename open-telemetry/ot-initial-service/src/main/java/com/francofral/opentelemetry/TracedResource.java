@@ -1,8 +1,10 @@
 package com.francofral.opentelemetry;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -20,19 +22,16 @@ public class TracedResource {
 
     private static final Logger LOG = Logger.getLogger(TracedResource.class);
 
-    private final Counter requestCounter;
-    private final Timer requestTimer;
+    private final LongCounter requestCounter;
+    private final Tracer tracer;
 
-    public TracedResource(MeterRegistry registry) {
-        this.requestCounter = Counter.builder("service_requests_total")
-                .description("Total number of service requests")
-                .tag("service", "ot-initial-service")
-                .register(registry);
-
-        this.requestTimer = Timer.builder("service_request_duration")
-                .description("Service request duration")
-                .tag("service", "ot-initial-service")
-                .register(registry);
+    public TracedResource(Meter meter, Tracer tracer) {
+        this.tracer = tracer;
+        this.requestCounter = meter
+                .counterBuilder("service_requests_total")
+                .setDescription("Total number of service requests")
+                .setUnit("requests")
+                .build();
     }
 
     @RestClient
@@ -41,21 +40,44 @@ public class TracedResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() throws Exception {
-        return requestTimer.recordCallable(() -> {
+        long startTime = System.currentTimeMillis();
+
+        // Create custom span for business logic
+        Span span = tracer.spanBuilder("hello-processing").startSpan();
+
+        try (Scope scope = span.makeCurrent()) {
             LOG.info("Service1: Starting request");
-            requestCounter.increment();
+            requestCounter.add(1);
+
+            span.setAttribute("service.name", "ot-initial-service");
+            span.addEvent("Processing started");
 
             TimeUnit.MILLISECONDS.sleep(100); // Simulate processing time
+
+            span.addEvent("Calling second service - first call");
             String response = secondServiceClient.callSecond();
             LOG.info("FIRST CALL: Service1: Received response from Service2: " + response);
 
             TimeUnit.MILLISECONDS.sleep(150); // Simulate processing time
+
+            span.addEvent("Calling second service - second call");
             String response2 = response + " " + secondServiceClient.callSecond();
             LOG.info("SECOND CALL: Service1: Received response from Service2: " + response2);
 
             DateFormat formatoDestino = new SimpleDateFormat("HH:mm:ss");
-            return "Service1 [ " + formatoDestino.format(new Date()) + " ] -> " + response2;
-        });
+            String result = "Service1 [ " + formatoDestino.format(new Date()) + " ] -> " + response2;
+
+            long duration = System.currentTimeMillis() - startTime;
+            span.setAttribute("request.duration_ms", duration);
+            span.addEvent("Processing completed");
+
+            return result;
+        } catch (Exception e) {
+            span.recordException(e);
+            span.setAttribute("error", true);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 }
-

@@ -2,18 +2,20 @@ services:
 
   # OpenTelemetry Collector (fans out traces to Tempo and Jaeger)
   otel-collector:
-    image: otel/opentelemetry-collector:latest
+    image: otel/opentelemetry-collector-contrib:latest
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "4317:4317"   # otlp grpc receiver
       - "4318:4318"   # otlp http receiver
+      - "8889:8889"   # prometheus exporter metrics
     networks:
       - monitoring
     depends_on:
       - tempo
       - jaeger-all-in-one
+      - loki
 
   # Tempo (Grafana's distributed tracing backend)
   tempo:
@@ -44,6 +46,19 @@ services:
       - "9090:9090"
     networks:
       - monitoring
+    depends_on:
+      - otel-collector
+
+  # Loki (log aggregation)
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - monitoring
 
   # Grafana
   grafana:
@@ -60,6 +75,7 @@ services:
     depends_on:
       - prometheus
       - tempo
+      - loki
 
   # Jaeger (for comparison) - using different OTLP ports to avoid conflict with Tempo
   jaeger-all-in-one:
@@ -82,6 +98,7 @@ volumes:
   tempo-data:
   prometheus-data:
   grafana-data:
+  loki-data:
 
 networks:
   monitoring:
