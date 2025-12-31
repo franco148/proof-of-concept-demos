@@ -11,8 +11,15 @@ processors:
     timeout: 1s
     send_batch_size: 1024
 
+  # Add resource attributes to all telemetry data
+  resource:
+    attributes:
+      - key: environment
+        value: dev
+        action: insert
+
 exporters:
-  # Traces
+  # Traces to Tempo and Jaeger
   otlp/tempo:
     endpoint: tempo:4317
     tls:
@@ -22,25 +29,32 @@ exporters:
     tls:
       insecure: true
 
-  # Metrics
-  prometheusremotewrite:
-    endpoint: http://prometheus:9090/api/v1/write
+  # Metrics to Prometheus via Remote Write (or use prometheusremotewrite exporter)
+#  prometheusremotewrite:
+#    endpoint: http://prometheus:9090/api/v1/write
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: otel
 
-  # Logs
+  # Logs to Loki
   loki:
     endpoint: http://loki:3100/loki/api/v1/push
+
+  # Debug - optional, for troubleshooting
+  logging:
+    loglevel: debug
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [batch, resource]
       exporters: [otlp/tempo, otlp/jaeger]
     metrics:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheusremotewrite]
+      processors: [batch, resource]
+      exporters: [prometheus]
     logs:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [loki]
+      processors: [batch, resource]
+      exporters: [loki, logging]
