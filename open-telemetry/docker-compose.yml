@@ -15,6 +15,7 @@ services:
     depends_on:
       - tempo
       - jaeger-all-in-one
+      - loki
 
   # Tempo (Distributed tracing backend for Grafana)
   tempo:
@@ -34,6 +35,8 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
+    volumes:
+      - loki-data:/loki
     networks:
       - monitoring
 
@@ -58,6 +61,10 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/tmp/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
     networks:
@@ -98,7 +105,7 @@ volumes:
   tempo-data:
   prometheus-data:
   grafana-data:
-  logs-volume:
+  loki-data:
 
 networks:
   monitoring:
