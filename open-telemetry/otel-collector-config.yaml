@@ -11,12 +11,15 @@ processors:
     timeout: 1s
     send_batch_size: 1024
 
-  # Add resource attributes to all telemetry data
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+
   resource:
     attributes:
-      - key: environment
-        value: dev
+      - key: service.name
         action: insert
+        value: otel-collector
 
 exporters:
   # Traces to Tempo and Jaeger
@@ -34,7 +37,7 @@ exporters:
 #    endpoint: http://prometheus:9090/api/v1/write
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: otel
+    namespace: default
 
   # Logs to Loki
   loki:
