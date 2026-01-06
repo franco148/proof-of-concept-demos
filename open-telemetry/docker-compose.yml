@@ -9,7 +9,7 @@ services:
     ports:
       - "4317:4317"   # otlp grpc receiver
       - "4318:4318"   # otlp http receiver
-      - "8888:8888"   # metrics endpoint
+      - "8889:8889"   # metrics endpoint
     networks:
       - monitoring
     depends_on:
