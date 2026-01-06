@@ -15,11 +15,11 @@ processors:
     check_interval: 1s
     limit_mib: 512
 
-  resource:
-    attributes:
-      - key: service.name
-        action: insert
-        value: otel-collector
+#  resource:
+#    attributes:
+#      - key: service.name
+#        action: upsert
+#        value: otel-collector
 
 exporters:
   # Traces to Tempo and Jaeger
@@ -27,6 +27,7 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+
   otlp/jaeger:
     endpoint: jaeger-all-in-one:4317
     tls:
@@ -40,24 +41,34 @@ exporters:
     namespace: default
 
   # Logs to Loki
-  loki:
-    endpoint: http://loki:3100/loki/api/v1/push
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
 
-  # Debug - optional, for troubleshooting
-  logging:
-    loglevel: debug
+  # Debug exporter (reemplaza logging)
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, resource]
-      exporters: [otlp/tempo, otlp/jaeger]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, otlp/jaeger, debug]
+
     metrics:
       receivers: [otlp]
-      processors: [batch, resource]
-      exporters: [prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]
+
     logs:
       receivers: [otlp]
-      processors: [batch, resource]
-      exporters: [loki, logging]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki, debug]
+
+  telemetry:
+    logs:
+      level: info
