@@ -3,24 +3,32 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ 'prometheus:9090' ]
+
   # Scrape metrics from OpenTelemetry Collector
   - job_name: 'otel-collector'
     static_configs:
       - targets: [ 'otel-collector:8889' ]
         labels:
           environment: 'dev'
+
   - job_name: 'grafana'
     static_configs:
       - targets: [ 'grafana:3000' ]
-  - job_name: 'ot-initial-service'
-    static_configs:
-      - targets: [ 'ot-initial-service:8080' ]
-    metrics_path: '/q/metrics'
-  - job_name: 'ot-second-service'
-    static_configs:
-      - targets: [ 'ot-second-service:8081' ]
-    metrics_path: '/q/metrics'
-  - job_name: 'ot-third-service'
-    static_configs:
-      - targets: [ 'ot-third-service:8082' ]
-    metrics_path: '/q/metrics'
+
+  # No required with PUSH approach, since the information is sent to otel-collector
+
+#  - job_name: 'ot-initial-service'
+#    static_configs:
+#      - targets: [ 'ot-initial-service:8080' ]
+#    metrics_path: '/q/metrics'
+#  - job_name: 'ot-second-service'
+#    static_configs:
+#      - targets: [ 'ot-second-service:8081' ]
+#    metrics_path: '/q/metrics'
+#  - job_name: 'ot-third-service'
+#    static_configs:
+#      - targets: [ 'ot-third-service:8082' ]
+#    metrics_path: '/q/metrics'
