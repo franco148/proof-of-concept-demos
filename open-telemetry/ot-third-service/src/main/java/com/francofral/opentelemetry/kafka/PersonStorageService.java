@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class PersonStorageService {
@@ -38,8 +39,9 @@ public class PersonStorageService {
                     personCreatedEvent.personLastname(),
                     personCreatedEvent.personAge()
             );
-
+            TimeUnit.MILLISECONDS.sleep(100);
             people.add(personToPersist);
+            TimeUnit.MILLISECONDS.sleep(100);
             LOGGER.infof("Successfully stored person with ID: %s", personCreatedEvent.personId());
         } catch (Exception e) {
             LOGGER.error("Error processing event for storage", e);
