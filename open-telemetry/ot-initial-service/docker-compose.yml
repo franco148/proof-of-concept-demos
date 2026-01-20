@@ -10,8 +10,8 @@ services:
     ports:
       - "4317:4317"   # otlp grpc receiver
       - "4318:4318"   # otlp http receiver
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
     depends_on:
       - tempo
       - jaeger-all-in-one
@@ -26,8 +26,8 @@ services:
       - tempo-data:/tmp/tempo
     ports:
       - "3200:3200"   # tempo
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
 
   # Prometheus
   prometheus:
@@ -45,8 +45,8 @@ services:
       - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
 
   # Grafana
   grafana:
@@ -59,8 +59,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:
       - "3000:3000"
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
     depends_on:
       - prometheus
       - tempo
@@ -77,8 +77,8 @@ services:
       - "14250:14250" # Receive from external otel-collector, optional
     environment:
       - COLLECTOR_OTLP_ENABLED=true
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
 
   loki:
     image: grafana/loki:latest
@@ -88,8 +88,8 @@ services:
       - "3100:3100"
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
-    networks:
-      - monitoring
+#    networks:
+#      - monitoring
 
   # Nota: Los microservicios se ejecutan localmente con mvn quarkus:dev
   # No se incluyen en docker-compose para facilitar el desarrollo
@@ -99,6 +99,6 @@ volumes:
   prometheus-data:
   grafana-data:
 
-networks:
-  monitoring:
-    driver: bridge
+#networks:
+#  monitoring:
+#    driver: bridge

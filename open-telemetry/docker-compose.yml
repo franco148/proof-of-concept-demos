@@ -3,6 +3,7 @@ services:
   # OpenTelemetry Collector (fans out traces and metrics)
   otel-collector:
     image: otel/opentelemetry-collector:latest
+    container_name: otel-collector-container
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -19,6 +20,7 @@ services:
   # Tempo (Distributed tracing backend for Grafana)
   tempo:
     image: grafana/tempo:latest
+    container_name: tempo-container
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
@@ -31,6 +33,7 @@ services:
   # Loki (Log aggregation system)
   loki:
     image: grafana/loki:latest
+    container_name: loki-container
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
@@ -40,6 +43,7 @@ services:
   # Promtail (Log shipper for Loki) - Reads both Quarkus logs and Docker logs
   promtail:
     image: grafana/promtail:latest
+    container_name: promtail-container
     volumes:
       - ./promtail-config.yaml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
@@ -53,6 +57,7 @@ services:
   # Prometheus
   prometheus:
     image: prom/prometheus:latest
+    container_name: prometheus-container
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
@@ -66,6 +71,7 @@ services:
   # Grafana
   grafana:
     image: grafana/grafana:latest
+    container_name: grafana-container
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -83,6 +89,7 @@ services:
   # Jaeger (for comparison)
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:latest
+    container_name: jaeger-container
     ports:
       - "16686:16686" # Jaeger UI
       - "14268:14268" # Receive legacy OpenTracing traces, optional
@@ -94,11 +101,37 @@ services:
     networks:
       - monitoring
 
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka-container
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - monitoring
+
 volumes:
   tempo-data:
   prometheus-data:
   grafana-data:
   logs-volume:
+  kafka-data:
 
 networks:
   monitoring:

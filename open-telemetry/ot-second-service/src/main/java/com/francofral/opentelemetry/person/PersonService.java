@@ -22,7 +22,7 @@ public class PersonService {
         var name = payload.name();
         boolean isValidName = ALLOWED_NAMES.contains(name);
 
-        if (isValidName)LOGGER.info("Person name %s is valid".formatted(name));
+        if (isValidName) LOGGER.info("Person name %s is valid".formatted(name));
         else LOGGER.error("Person name %s is not valid".formatted(name));
 
         LOGGER.info(payload.age() < 18 ? "Person is underage" : "Person is overage");
